@@ -5,17 +5,17 @@ import sys
 # Инициализация Pygame
 pygame.init()
 
-# Определение цветов
-COLOR_TEXT = (65, 105, 225)
-COLOR_BLOCK = (200, 200, 200)
-COLOR_FILL = (255, 255, 255)
-
 BORDER_SIZE = 4
 
 # Определение параметров окна
 WIDTH = 400
 HEIGHT = 400
 CELL_SIZE = WIDTH // BORDER_SIZE
+
+# Определение цветов
+COLOR_TEXT = (65, 105, 225)
+COLOR_BLOCK = (200, 200, 200)
+COLOR_FILL = (255, 255, 255)
 
 # Радиус круглого угла фишки
 RADIUS = 20
@@ -101,6 +101,7 @@ def main():
                 if abs(row - empty_row) + abs(col - empty_col) == 1:
                     swap(board, row, col, empty_row, empty_col)
                     empty_row, empty_col = row, col
+                # смещение строки/столбца целиком в зависимости от положения пустой клетки
                 elif abs(row - empty_row) * abs(col - empty_col) == 0:
                     if row == empty_row:
                         mode = col > empty_col
