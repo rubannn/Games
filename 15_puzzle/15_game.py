@@ -81,6 +81,11 @@ def condition(a, b, mode):
     return [a >= b, a <= b][mode]
 
 
+# refactor ...line 110-124
+def move_empty_cell(board, row, col, empty_row, empty_col, type):
+    pass
+
+
 # Основная функция игры
 def main():
     # Создание игрового поля
