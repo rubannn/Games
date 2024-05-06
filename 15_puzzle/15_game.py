@@ -28,14 +28,14 @@ pygame.display.set_caption("Игра 15")
 
 # Функция для проверки четности перестаноки, т.е. проверка существования решения
 def is_can_solved(lst):
-    sol, n = 0, len(lst)
-    for i in range(n):
+    sol = 0
+    for i in range(BORDER_SIZE**2):
         if lst[i]:
             for j in range(i):
                 if lst[j] > lst[i]:
                     sol += 1
-    sol += lst.index(0) // 4 + 1
-    return sol % 2 == 0
+    sol += lst.index(0) // BORDER_SIZE + 1
+    return sol % 2 == (BORDER_SIZE**2) % 2
 
 
 # Функция для создания и перемешивания пятнашек
