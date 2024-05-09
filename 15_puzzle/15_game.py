@@ -77,12 +77,13 @@ def swap(board, row1, col1, row2, col2):
     board[row1][col1], board[row2][col2] = board[row2][col2], board[row1][col1]
 
 
-def condition(a, b, mode):
+def condition(p1, p2, pair, mode):
+    a, b = [p2, p1][pair]
     return [a >= b, a <= b][mode]
 
 
 # refactor ...line 110-124
-def move_empty_cell(board, row, col, empty_row, empty_col, type):
+def move_cells():
     pass
 
 
@@ -91,6 +92,7 @@ def main():
     # Создание игрового поля
     board = create_board()
     empty_row, empty_col = find_empty_cell(board)
+    vec = (-1, 1)
 
     while True:
         # Обработка событий
@@ -109,19 +111,17 @@ def main():
                 # смещение строки/столбца целиком в зависимости от положения пустой клетки
                 elif abs(row - empty_row) * abs(col - empty_col) == 0:
                     if row == empty_row:
+                        k1, k2, pair = (0, 1, 0)
                         mode = col > empty_col
-                        x, y = empty_row, empty_col + (-1) ** (mode + 1)
-                        while condition(y, col, mode):
-                            swap(board, x, y, empty_row, empty_col)
-                            empty_row, empty_col = x, y
-                            x, y = empty_row, empty_col + (-1) ** (mode + 1)
                     elif col == empty_col:
+                        k1, k2, pair = (1, 0, 1)
                         mode = row > empty_row
-                        x, y = empty_row + (-1) ** (mode + 1), empty_col
-                        while condition(x, row, mode):
-                            swap(board, x, y, empty_row, empty_col)
-                            empty_row, empty_col = x, y
-                            x, y = empty_row + (-1) ** (mode + 1), empty_col
+
+                    x, y = empty_row + k1 * vec[mode], empty_col + k2 * vec[mode]
+                    while condition((x, row), (y, col), pair, mode):
+                        swap(board, x, y, empty_row, empty_col)
+                        empty_row, empty_col = x, y
+                        x, y = empty_row + k1 * vec[mode], empty_col + k2 * vec[mode]
 
         # Отрисовка игрового поля
         screen.fill(COLOR_FILL)
