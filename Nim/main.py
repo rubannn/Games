@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+import random
 import sys
 from dataclasses import dataclass, field
 from enum import IntEnum
@@ -8,8 +10,8 @@ import pygame
 from pygame import gfxdraw
 
 WIDTH, HEIGHT = 640, 480
-FONT_SIZE = 22
-TITLE_FONT_SIZE = 32
+FONT_SIZE = 17
+TITLE_FONT_SIZE = 26
 
 CHIP_RADIUS = 20
 CHIP_SPACING = 60
@@ -18,18 +20,21 @@ GROUP_ROW_SPACING = 90
 
 BUTTON_RECT = pygame.Rect(240, 380, 160, 50)
 
-# Modern dark palette
-COLOR_BG = (24, 26, 32)
-COLOR_TEXT = (230, 232, 238)
-COLOR_TEXT_MUTED = (150, 155, 168)
-COLOR_CHIP = (94, 129, 244)
-COLOR_CHIP_SHADOW = (12, 13, 18)
-COLOR_HIGHLIGHT = (255, 196, 61)
-COLOR_BUTTON = (94, 129, 244)
-COLOR_BUTTON_HOVER = (117, 148, 250)
-COLOR_BUTTON_DISABLED = (58, 61, 72)
-COLOR_BUTTON_TEXT = (255, 255, 255)
-COLOR_WIN = (255, 99, 99)
+# Wooden board / Go-stone palette
+WOOD_BASE = (200, 155, 106)
+WOOD_GRID = (107, 74, 43)
+COLOR_TEXT = (59, 42, 26)
+COLOR_TEXT_MUTED = (122, 92, 61)
+STONE_BASE = (35, 33, 31)
+STONE_EDGE = (15, 14, 13)
+STONE_HIGHLIGHT = (98, 92, 87)
+STONE_SHADOW = (150, 112, 70)
+COLOR_HIGHLIGHT = (217, 79, 48)
+COLOR_BUTTON = (107, 74, 43)
+COLOR_BUTTON_HOVER = (134, 95, 56)
+COLOR_BUTTON_DISABLED = (170, 148, 120)
+COLOR_BUTTON_TEXT = (245, 234, 214)
+COLOR_WIN = (217, 79, 48)
 
 
 class Player(IntEnum):
@@ -95,11 +100,26 @@ def clicked_chip(state: GameState, pos: tuple[int, int]) -> tuple[int | None, in
     return None, 0
 
 
+def build_wood_background(size: tuple[int, int]) -> pygame.Surface:
+    """Pre-render a subtle wood-grain board texture once, so it's cheap to blit every frame."""
+    surface = pygame.Surface(size)
+    surface.fill(WOOD_BASE)
+    width, height = size
+    rng = random.Random(7)
+    for y in range(0, height, 3):
+        wobble = int(math.sin(y * 0.08) * 6)
+        shade = rng.randint(-12, 8)
+        color = tuple(max(0, min(255, c + shade)) for c in WOOD_BASE)
+        pygame.draw.line(surface, color, (0, y), (width, y + wobble), 2)
+    return surface
+
+
 class Renderer:
     def __init__(self, screen: pygame.Surface) -> None:
         self.screen = screen
-        self.font = pygame.font.SysFont("segoeui", FONT_SIZE)
-        self.title_font = pygame.font.SysFont("segoeui", TITLE_FONT_SIZE, bold=True)
+        self.background = build_wood_background(screen.get_size())
+        self.font = pygame.font.SysFont("georgia", FONT_SIZE)
+        self.title_font = pygame.font.SysFont("georgia", TITLE_FONT_SIZE, bold=True)
 
     def draw_text(
         self,
@@ -118,22 +138,29 @@ class Renderer:
             rect.topleft = position
         self.screen.blit(surface, rect)
 
-    def draw_chip(self, center: tuple[int, int], color: tuple[int, int, int], *, ring: bool = False) -> None:
+    def draw_chip(self, center: tuple[int, int], *, ring: bool = False) -> None:
         x, y = center
-        gfxdraw.filled_circle(self.screen, x + 2, y + 3, CHIP_RADIUS, COLOR_CHIP_SHADOW)
-        gfxdraw.filled_circle(self.screen, x, y, CHIP_RADIUS, color)
-        gfxdraw.aacircle(self.screen, x, y, CHIP_RADIUS, color)
+        gfxdraw.filled_circle(self.screen, x + 2, y + 3, CHIP_RADIUS, STONE_SHADOW)
+        gfxdraw.filled_circle(self.screen, x, y, CHIP_RADIUS, STONE_BASE)
+        gfxdraw.aacircle(self.screen, x, y, CHIP_RADIUS, STONE_EDGE)
+        gloss_radius = CHIP_RADIUS // 2
+        gloss_x, gloss_y = x - CHIP_RADIUS // 3, y - CHIP_RADIUS // 3
+        gfxdraw.filled_circle(self.screen, gloss_x, gloss_y, gloss_radius, STONE_HIGHLIGHT)
+        gfxdraw.aacircle(self.screen, gloss_x, gloss_y, gloss_radius, STONE_HIGHLIGHT)
         if ring:
             gfxdraw.aacircle(self.screen, x, y, CHIP_RADIUS + 4, COLOR_HIGHLIGHT)
             gfxdraw.aacircle(self.screen, x, y, CHIP_RADIUS + 5, COLOR_HIGHLIGHT)
 
     def draw_groups(self, state: GameState) -> None:
         for group_index, count in enumerate(state.groups):
+            row_y = GROUP_START[1] + group_index * GROUP_ROW_SPACING
+            pygame.draw.line(self.screen, WOOD_GRID, (40, row_y + 35), (WIDTH - 40, row_y + 35), 1)
+
             selected = state.selected_group == group_index
             for chip_index in range(count):
                 pos = chip_position(group_index, chip_index)
                 is_selected = selected and chip_index < state.selected_count
-                self.draw_chip(pos, COLOR_CHIP, ring=is_selected)
+                self.draw_chip(pos, ring=is_selected)
 
     def draw_button(self, *, enabled: bool, hovered: bool) -> None:
         if not enabled:
@@ -142,7 +169,8 @@ class Renderer:
             color = COLOR_BUTTON_HOVER
         else:
             color = COLOR_BUTTON
-        pygame.draw.rect(self.screen, color, BUTTON_RECT, border_radius=12)
+        pygame.draw.rect(self.screen, color, BUTTON_RECT, border_radius=8)
+        pygame.draw.rect(self.screen, WOOD_GRID, BUTTON_RECT, 2, border_radius=8)
         self.draw_text("Remove selected", BUTTON_RECT.center, color=COLOR_BUTTON_TEXT, center=True)
 
     def draw_status(self, state: GameState) -> None:
@@ -170,7 +198,7 @@ class Renderer:
             )
 
     def render(self, state: GameState, *, button_hovered: bool) -> None:
-        self.screen.fill(COLOR_BG)
+        self.screen.blit(self.background, (0, 0))
         self.draw_status(state)
         self.draw_groups(state)
         self.draw_button(enabled=state.can_remove_selected(), hovered=button_hovered)
