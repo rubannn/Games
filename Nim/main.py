@@ -84,8 +84,10 @@ class GameState:
             self.current_player = self.current_player.other
 
 
-def chip_position(group_index: int, chip_index: int) -> tuple[int, int]:
-    x = GROUP_START[0] + chip_index * CHIP_SPACING
+def chip_position(group_index: int, chip_index: int, count: int) -> tuple[int, int]:
+    row_width = (count - 1) * CHIP_SPACING
+    start_x = WIDTH // 2 - row_width // 2
+    x = start_x + chip_index * CHIP_SPACING
     y = GROUP_START[1] + group_index * GROUP_ROW_SPACING
     return x, y
 
@@ -94,7 +96,7 @@ def clicked_chip(state: GameState, pos: tuple[int, int]) -> tuple[int | None, in
     mouse_x, mouse_y = pos
     for group_index, count in enumerate(state.groups):
         for chip_index in range(count):
-            x, y = chip_position(group_index, chip_index)
+            x, y = chip_position(group_index, chip_index, count)
             if (mouse_x - x) ** 2 + (mouse_y - y) ** 2 <= CHIP_RADIUS ** 2:
                 return group_index, chip_index + 1
     return None, 0
@@ -158,20 +160,23 @@ class Renderer:
 
             selected = state.selected_group == group_index
             for chip_index in range(count):
-                pos = chip_position(group_index, chip_index)
+                pos = chip_position(group_index, chip_index, count)
                 is_selected = selected and chip_index < state.selected_count
                 self.draw_chip(pos, ring=is_selected)
 
-    def draw_button(self, *, enabled: bool, hovered: bool) -> None:
-        if not enabled:
+    def draw_button(self, state: GameState, *, hovered: bool) -> None:
+        if state.winner is not None:
+            label = "New game"
+            color = COLOR_BUTTON_HOVER if hovered else COLOR_BUTTON
+        elif not state.can_remove_selected():
+            label = "Remove selected"
             color = COLOR_BUTTON_DISABLED
-        elif hovered:
-            color = COLOR_BUTTON_HOVER
         else:
-            color = COLOR_BUTTON
+            label = "Remove selected"
+            color = COLOR_BUTTON_HOVER if hovered else COLOR_BUTTON
         pygame.draw.rect(self.screen, color, BUTTON_RECT, border_radius=8)
         pygame.draw.rect(self.screen, WOOD_GRID, BUTTON_RECT, 2, border_radius=8)
-        self.draw_text("Remove selected", BUTTON_RECT.center, color=COLOR_BUTTON_TEXT, center=True)
+        self.draw_text(label, BUTTON_RECT.center, color=COLOR_BUTTON_TEXT, center=True)
 
     def draw_status(self, state: GameState) -> None:
         self.draw_text(f"Player {state.current_player}'s turn", (WIDTH - 220, 20), color=COLOR_TEXT_MUTED)
@@ -201,7 +206,7 @@ class Renderer:
         self.screen.blit(self.background, (0, 0))
         self.draw_status(state)
         self.draw_groups(state)
-        self.draw_button(enabled=state.can_remove_selected(), hovered=button_hovered)
+        self.draw_button(state, hovered=button_hovered)
         pygame.display.flip()
 
 
@@ -224,7 +229,9 @@ def main() -> None:
                 running = False
 
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                if button_hovered and state.can_remove_selected():
+                if button_hovered and state.winner is not None:
+                    state = GameState()
+                elif button_hovered and state.can_remove_selected():
                     state.remove_selected()
                 elif state.winner is None:
                     group_index, count = clicked_chip(state, mouse_pos)
