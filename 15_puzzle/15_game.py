@@ -2,31 +2,31 @@ import pygame
 import random
 import sys
 
-# Инициализация Pygame
+# Initialize Pygame
 pygame.init()
 
 BORDER_SIZE = 4
 FONT_SIZE = {3: 80, 4: 70, 5: 60, 6: 50, 7: 40, 8: 30}.get(BORDER_SIZE, 50)
 
-# Определение параметров окна
+# Window parameters
 WIDTH = 400
 HEIGHT = 400
 CELL_SIZE = WIDTH // BORDER_SIZE
 
-# Определение цветов
+# Colors
 COLOR_TEXT = (65, 105, 225)
 COLOR_BLOCK = (200, 200, 200)
 COLOR_FILL = (255, 255, 255)
 
-# Радиус круглого угла фишки
+# Rounded tile corner radius
 RADIUS = 20
 
-# Создание окна
+# Create window
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Игра 15")
+pygame.display.set_caption("15 Puzzle")
 
 
-# Функция для проверки четности перестаноки, т.е. проверка существования решения
+# Function to check parity of the permutation, i.e. whether a solution exists
 def is_can_solved(lst):
     sol = 0
     for i in range(BORDER_SIZE**2):
@@ -38,7 +38,7 @@ def is_can_solved(lst):
     return sol % 2 == (BORDER_SIZE**2) % 2
 
 
-# Функция для создания и перемешивания пятнашек
+# Function to create and shuffle the 15-puzzle board
 def create_board():
     board = [[0] * BORDER_SIZE for _ in range(BORDER_SIZE)]
     numbers = list(range(BORDER_SIZE**2))
@@ -53,7 +53,7 @@ def create_board():
     return board
 
 
-# Функция для нахождения пустой ячейки
+# Function to locate the empty cell
 def find_empty_cell(board):
     for i in range(BORDER_SIZE):
         for j in range(BORDER_SIZE):
@@ -61,7 +61,7 @@ def find_empty_cell(board):
                 return i, j
 
 
-# Функция для проверки завершения игры
+# Function to check if the game is finished
 def check_win(board):
     k = 1
     for i in range(BORDER_SIZE):
@@ -72,7 +72,7 @@ def check_win(board):
     return True
 
 
-# Функция для обмена пятнашки с пустой ячейкой
+# Function to swap a tile with the empty cell
 def swap(board, row1, col1, row2, col2):
     board[row1][col1], board[row2][col2] = board[row2][col2], board[row1][col1]
 
@@ -87,15 +87,15 @@ def move_cells():
     pass
 
 
-# Основная функция игры
+# Main game function
 def main():
-    # Создание игрового поля
+    # Create the game board
     board = create_board()
     empty_row, empty_col = find_empty_cell(board)
     vec = (-1, 1)
 
     while True:
-        # Обработка событий
+        # Event handling
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -123,7 +123,7 @@ def main():
                         empty_row, empty_col = x, y
                         x, y = empty_row + k1 * vec[mode], empty_col + k2 * vec[mode]
 
-        # Отрисовка игрового поля
+        # Draw the game board
         screen.fill(COLOR_FILL)
         for i in range(BORDER_SIZE):
             for j in range(BORDER_SIZE):
@@ -145,10 +145,10 @@ def main():
                     )
                     screen.blit(text, text_rect)
 
-        # Проверка завершения игры
+        # Check if the game is finished
         if check_win(board):
             font = pygame.font.Font(None, FONT_SIZE)
-            text = font.render("Вы выиграли!", True, COLOR_BLOCK)
+            text = font.render("You won!", True, COLOR_BLOCK)
             text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 2))
             screen.blit(text, text_rect)
 
